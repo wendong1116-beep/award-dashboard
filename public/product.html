@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>产品详情</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --gold:#c9a227;
+            --gold-light:#e8d48b;
+            --gold-dark:#8b7020;
+            --bg-dark:#0a0a0f;
+            --bg-card:#12121a;
+            --border-gold:rgba(201,162,39,0.25);
+            --text-dim:rgba(255,255,255,0.45);
+            --text-light:rgba(255,255,255,0.85)
+        }
+        body{
+            font-family:'Noto Serif SC','Playfair Display',serif;
+            background:var(--bg-dark);
+            color:#fff;
+            min-height:100vh
+        }
+
+        .bg{position:fixed;inset:0;z-index:-1}
+        .bg::before{
+            content:'';position:absolute;inset:0;
+            background:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(201,162,39,0.06) 0%,transparent 60%);
+        }
+
+        /* Header */
+        .header{
+            position:fixed;top:0;left:0;right:0;z-index:100;
+            padding:20px 50px;display:flex;justify-content:space-between;align-items:center;
+            background:linear-gradient(to bottom,rgba(10,10,15,0.98),transparent)
+        }
+        .header h1{font-size:18px;color:var(--gold);font-weight:600;letter-spacing:4px}
+        .back-btn{
+            padding:10px 24px;border-radius:24px;border:1px solid var(--border-gold);
+            color:var(--text-light);font-size:13px;cursor:pointer;letter-spacing:1px;
+            transition:all 0.3s
+        }
+        .back-btn:hover{background:var(--gold);color:#0a0a0f;border-color:var(--gold)}
+
+        /* Main */
+        .main{
+            max-width:1200px;margin:0 auto;
+            padding:120px 50px 80px
+        }
+
+        /* Breadcrumb */
+        .breadcrumb{
+            display:flex;align-items:center;gap:12px;
+            margin-bottom:40px;font-size:14px
+        }
+        .breadcrumb a{color:var(--gold);text-decoration:none;letter-spacing:1px}
+        .breadcrumb a:hover{text-decoration:underline}
+        .breadcrumb span{color:var(--text-dim)}
+
+        /* Page Title */
+        .page-title{
+            text-align:center;margin-bottom:50px
+        }
+        .page-title h2{
+            font-family:'Playfair Display',serif;
+            font-size:42px;font-weight:400;color:var(--gold);
+            letter-spacing:8px;margin-bottom:16px
+        }
+        .page-title .divider{
+            width:80px;height:1px;
+            background:linear-gradient(90deg,transparent,var(--gold),transparent);
+            margin:0 auto
+        }
+
+        /* Content Card */
+        .content-card{
+            background:rgba(255,255,255,0.02);
+            border:1px solid var(--border-gold);
+            border-radius:24px;padding:50px;
+            margin-bottom:40px
+        }
+
+        /* Info Grid */
+        .info-section{margin-bottom:50px}
+        .info-section h3{
+            font-size:13px;color:var(--text-dim);letter-spacing:4px;
+            margin-bottom:24px;font-weight:400;text-align:center
+        }
+
+        .info-grid{
+            display:grid;grid-template-columns:repeat(3, 1fr);gap:24px
+        }
+        .info-item{
+            padding:24px;background:rgba(255,255,255,0.02);
+            border:1px solid rgba(201,162,39,0.1);border-radius:16px
+        }
+        .info-item label{
+            display:block;font-size:12px;color:var(--text-dim);
+            letter-spacing:2px;margin-bottom:10px
+        }
+        .info-item .value{
+            font-size:15px;color:var(--text-light);line-height:1.6
+        }
+
+        /* Badge */
+        .badge{
+            display:inline-block;padding:6px 16px;border-radius:16px;font-size:13px;letter-spacing:1px
+        }
+        .badge-gold{background:rgba(201,162,39,0.15);color:var(--gold-light);border:1px solid rgba(201,162,39,0.3)}
+        .badge-silver{background:rgba(192,192,192,0.1);color:#d0d0d0;border:1px solid rgba(192,192,192,0.2)}
+        .badge-bronze{background:rgba(205,97,51,0.1);color:#cd6133;border:1px solid rgba(205,97,51,0.2)}
+        .badge-default{background:rgba(255,255,255,0.05);color:var(--text-light);border:1px solid rgba(255,255,255,0.1)}
+
+        /* Features Section */
+        .features-section{margin-bottom:50px}
+        .features-section h3{
+            font-size:13px;color:var(--text-dim);letter-spacing:4px;
+            margin-bottom:24px;font-weight:400;text-align:center
+        }
+        .features-box{
+            padding:30px;background:rgba(255,255,255,0.02);
+            border:1px solid rgba(201,162,39,0.1);border-radius:16px;
+            line-height:1.8;font-size:15px;color:var(--text-light)
+        }
+
+        /* Image Button */
+        .image-btn-wrap{text-align:center;margin-bottom:40px}
+        .image-btn{
+            display:inline-block;padding:16px 40px;border-radius:30px;
+            border:1px solid var(--gold);background:linear-gradient(135deg,rgba(201,162,39,0.15),rgba(201,162,39,0.05));
+            color:var(--gold);font-size:15px;letter-spacing:3px;cursor:pointer;
+            transition:all 0.3s
+        }
+        .image-btn:hover{
+            background:linear-gradient(135deg,var(--gold),var(--gold-light));
+            color:#0a0a0f;transform:translateY(-2px);
+            box-shadow:0 10px 30px rgba(201,162,39,0.3)
+        }
+        .image-btn .icon{margin-right:10px}
+
+        /* Image Gallery Modal */
+        .gallery-modal{
+            position:fixed;inset:0;background:rgba(0,0,0,0.95);
+            display:none;justify-content:center;align-items:center;
+            z-index:1000;padding:40px
+        }
+        .gallery-modal.show{display:flex}
+        .gallery-close{
+            position:absolute;top:30px;right:40px;
+            width:50px;height:50px;border-radius:50%;
+            border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);
+            color:#fff;font-size:24px;cursor:pointer;transition:all 0.3s
+        }
+        .gallery-close:hover{background:var(--gold);border-color:var(--gold)}
+        .gallery-content{
+            max-width:90vw;max-height:85vh;
+            display:flex;flex-direction:column;align-items:center;justify-content:center
+        }
+        .gallery-main{
+            max-width:100%;max-height:70vh;object-fit:contain;
+            border-radius:12px;margin-bottom:20px
+        }
+        .gallery-placeholder{
+            width:600px;height:400px;
+            background:rgba(255,255,255,0.03);border:1px dashed rgba(201,162,39,0.3);
+            border-radius:16px;display:flex;flex-direction:column;
+            align-items:center;justify-content:center;
+            color:var(--text-dim)
+        }
+        .gallery-placeholder .icon{font-size:60px;margin-bottom:20px;opacity:0.5}
+        .gallery-placeholder p{font-size:14px;letter-spacing:2px}
+        .gallery-nav{
+            display:flex;gap:20px;align-items:center
+        }
+        .gallery-nav button{
+            padding:12px 24px;border-radius:24px;
+            border:1px solid var(--border-gold);background:transparent;
+            color:var(--text-light);font-size:13px;cursor:pointer;transition:all 0.3s
+        }
+        .gallery-nav button:hover{background:var(--gold);color:#0a0a0f;border-color:var(--gold)}
+        .gallery-nav .counter{color:var(--text-dim);font-size:13px}
+
+        .loading{text-align:center;padding:100px;color:var(--text-dim)}
+
+        @media (max-width: 900px) {
+            .info-grid{grid-template-columns:repeat(2, 1fr)}
+        }
+        @media (max-width: 600px) {
+            .header{padding:16px 24px}
+            .main{padding:100px 24px 60px}
+            .content-card{padding:30px 24px}
+            .info-grid{grid-template-columns:1fr}
+            .page-title h2{font-size:28px;letter-spacing:4px}
+            .gallery-placeholder{width:100%;height:250px}
+        }
+    </style>
+    <script src="js/particles.js"></script>
+</head>
+<body>
+    <div class="bg"></div>
+
+    <div class="header">
+        <h1>雅昌印制大奖</h1>
+        <div class="back-btn" onclick="goBack()">← 返回</div>
+    </div>
+
+    <div class="main">
+        <div class="breadcrumb">
+            <a href="index.html">首页</a>
+            <span>›</span>
+            <a href="#" id="awardLink">奖项</a>
+            <span>›</span>
+            <span>产品详情</span>
+        </div>
+
+        <div class="page-title">
+            <h2>PRODUCT DETAILS</h2>
+            <div class="divider"></div>
+        </div>
+
+        <div class="content-card">
+            <div class="info-section">
+                <h3>基本信息</h3>
+                <div class="info-grid" id="infoGrid"></div>
+            </div>
+
+            <div class="features-section">
+                <h3>设计工艺特点</h3>
+                <div class="features-box" id="featuresBox"></div>
+            </div>
+
+            <div class="image-btn-wrap">
+                <div class="image-btn" onclick="openGallery()">
+                    <span class="icon">🖼</span>作品图片
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Gallery Modal -->
+    <div class="gallery-modal" id="galleryModal">
+        <button class="gallery-close" onclick="closeGallery()">×</button>
+        <div class="gallery-content">
+            <div class="gallery-placeholder" id="galleryPlaceholder">
+                <div class="icon">📷</div>
+                <p>暂无作品图片</p>
+            </div>
+            <img class="gallery-main" id="galleryMain" style="display:none" alt="作品图片">
+            <div class="gallery-nav">
+                <button onclick="prevImage()">← 上一张</button>
+                <span class="counter" id="galleryCounter">1 / 1</span>
+                <button onclick="nextImage()">下一张 →</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let product = {};
+        let currentImageIndex = 0;
+        let images = [];
+
+        const params = new URLSearchParams(window.location.search);
+        const productId = params.get('id');
+
+        async function loadProduct() {
+            try {
+                const resp = await fetch('/api/products/' + productId);
+                if (!resp.ok) throw new Error('Product not found');
+                product = await resp.json();
+                // Support both old single image_url and new JSON-array images
+                if (product.images) {
+                    images = product.images;
+                } else if (product.image_url) {
+                    try { images = JSON.parse(product.image_url); } catch { images = [product.image_url]; }
+                } else {
+                    images = [];
+                }
+                renderProduct();
+            } catch (e) {
+                document.getElementById('infoGrid').innerHTML = '<p style="color:#e94560;padding:40px;text-align:center;grid-column:1/-1">产品不存在或已被删除</p>';
+            }
+        }
+
+        function renderProduct() {
+            // Update breadcrumb link
+            document.getElementById('awardLink').textContent = product.name;
+            document.getElementById('awardLink').href = 'award.html?award=' + encodeURIComponent(product.name);
+
+            // Badge
+            let levelBadge = 'badge-default';
+            const level = product.award_level || '';
+            if (level.match(/金|班尼|全场/)) levelBadge = 'badge-gold';
+            else if (level.match(/优/)) levelBadge = 'badge-silver';
+            else if (level.match(/秀/)) levelBadge = 'badge-bronze';
+
+            const imgCount = images.length;
+            // Info grid - show all fields
+            const infoFields = [
+                { label: '奖项名称', value: product.name },
+                { label: '产品名称', value: product.product_name || '-' },
+                { label: '获奖年份', value: product.year || '-' },
+                { label: '获奖单位', value: product.region || '-' },
+                { label: '获奖等级', value: product.award_level ? '<span class="badge ' + levelBadge + '">' + product.award_level + '</span>' : '-' },
+                { label: '产品类型', value: product.photography_type || '-' },
+                { label: '装订方式', value: product.binding || '-' },
+                { label: '出版社', value: product.publisher || '-' },
+                { label: '图片数量', value: imgCount > 0 ? imgCount + ' 张' : '无' }
+            ];
+
+            document.getElementById('infoGrid').innerHTML = infoFields.map(f =>
+                '<div class="info-item">' +
+                    '<label>' + f.label + '</label>' +
+                    '<div class="value">' + f.value + '</div>' +
+                '</div>'
+            ).join('');
+
+            // Features
+            const features = product.features || '暂无相关描述';
+            document.getElementById('featuresBox').textContent = features;
+        }
+
+        function openGallery() {
+            currentImageIndex = 0;
+
+            if (images.length === 0) {
+                document.getElementById('galleryPlaceholder').style.display = 'flex';
+                document.getElementById('galleryMain').style.display = 'none';
+                document.getElementById('galleryCounter').textContent = '0 / 0';
+            } else {
+                document.getElementById('galleryPlaceholder').style.display = 'none';
+                document.getElementById('galleryMain').style.display = 'block';
+                document.getElementById('galleryMain').src = images[0];
+                document.getElementById('galleryCounter').textContent = (currentImageIndex + 1) + ' / ' + images.length;
+            }
+
+            document.getElementById('galleryModal').classList.add('show');
+        }
+
+        function closeGallery() {
+            document.getElementById('galleryModal').classList.remove('show');
+        }
+
+        function prevImage() {
+            if (images.length === 0) return;
+            currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+            document.getElementById('galleryMain').src = images[currentImageIndex];
+            document.getElementById('galleryCounter').textContent = (currentImageIndex + 1) + ' / ' + images.length;
+        }
+
+        function nextImage() {
+            if (images.length === 0) return;
+            currentImageIndex = (currentImageIndex + 1) % images.length;
+            document.getElementById('galleryMain').src = images[currentImageIndex];
+            document.getElementById('galleryCounter').textContent = (currentImageIndex + 1) + ' / ' + images.length;
+        }
+
+        function goBack() {
+            const ref = document.referrer;
+            if (ref && ref.includes(window.location.hostname) && !ref.includes('product.html')) {
+                window.history.back();
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Close gallery on escape key
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeGallery();
+            if (e.key === 'ArrowLeft') prevImage();
+            if (e.key === 'ArrowRight') nextImage();
+        });
+
+        loadProduct();
+    </script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>筛选结果</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --gold:#c9a227;
+            --gold-light:#e8d48b;
+            --bg-dark:#0a0a0f;
+            --border-gold:rgba(201,162,39,0.3);
+            --text-dim:rgba(255,255,255,0.45);
+            --text-light:rgba(255,255,255,0.85)
+        }
+        body{
+            font-family:'Noto Serif SC','Playfair Display',serif;
+            background:var(--bg-dark);
+            color:#fff;
+            min-height:100vh
+        }
+        .bg{position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 50% at 50% 50%,rgba(201,162,39,0.06) 0%,transparent 70%)}
+
+        .header{
+            position:fixed;top:0;left:0;right:0;z-index:100;
+            padding:20px 40px;display:flex;justify-content:space-between;align-items:center;
+            background:linear-gradient(to bottom,rgba(10,10,15,0.98),transparent)
+        }
+        .header h1{font-size:18px;color:var(--gold);font-weight:600;letter-spacing:3px}
+        .header-right{display:flex;align-items:center;gap:16px}
+        .search-box{position:relative}
+        .search-box input{
+            width:220px;padding:10px 16px;padding-left:38px;
+            border-radius:20px;border:1px solid var(--border-gold);
+            background:rgba(255,255,255,0.03);color:#fff;font-size:13px
+        }
+        .search-box input:focus{outline:none;border-color:var(--gold)}
+        .search-box input::placeholder{color:var(--text-dim)}
+        .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--gold);opacity:0.5}
+        .btn{
+            padding:10px 20px;border-radius:20px;border:1px solid var(--border-gold);
+            background:transparent;color:var(--text-light);font-size:13px;cursor:pointer
+        }
+        .btn:hover{background:var(--gold);color:#0a0a0f;border-color:var(--gold)}
+
+        .main{max-width:1200px;margin:0 auto;padding:100px 40px 60px}
+
+        .breadcrumb{
+            display:flex;align-items:center;gap:10px;
+            margin-bottom:40px;font-size:14px
+        }
+        .breadcrumb a{color:var(--gold);text-decoration:none}
+        .breadcrumb a:hover{text-decoration:underline}
+        .breadcrumb span{color:var(--text-dim)}
+
+        .result-header{
+            display:flex;align-items:center;justify-content:space-between;
+            margin-bottom:30px
+        }
+        .result-header h2{
+            font-size:24px;color:var(--gold);font-weight:400;letter-spacing:2px
+        }
+        .result-header .count{font-size:14px;color:var(--text-dim)}
+        .result-header .count strong{color:var(--gold)}
+
+        .table-section{
+            background:rgba(255,255,255,0.02);
+            border:1px solid var(--border-gold);
+            border-radius:20px;padding:24px
+        }
+        .table-section h3{
+            font-size:16px;color:var(--text-light);margin-bottom:20px;font-weight:400
+        }
+        .table-wrapper{overflow-x:auto}
+        table{width:100%;border-collapse:collapse}
+        th,td{padding:14px 16px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.04);white-space:nowrap}
+        th{color:var(--text-dim);font-weight:400;font-size:13px}
+        td{color:var(--text-light);font-size:14px}
+        tr:hover td{background:rgba(201,162,39,0.05)}
+        tr:hover td:first-child{color:var(--gold)}
+        tr{cursor:pointer}
+
+        .badge{
+            display:inline-block;padding:4px 12px;border-radius:12px;font-size:12px
+        }
+        .badge-gold{background:rgba(201,162,39,0.2);color:var(--gold)}
+        .badge-silver{background:rgba(192,192,192,0.2);color:#c0c0c0}
+        .badge-bronze{background:rgba(205,97,51,0.2);color:#cd6133}
+        .badge-default{background:rgba(255,255,255,0.1);color:var(--text-light)}
+
+        .pagination{display:flex;justify-content:center;gap:8px;margin-top:24px;flex-wrap:wrap}
+        .pagination button{
+            padding:8px 14px;border-radius:8px;border:1px solid var(--border-gold);
+            background:transparent;color:var(--text-dim);font-size:13px;cursor:pointer
+        }
+        .pagination button:hover:not(:disabled){background:rgba(201,162,39,0.1);color:var(--gold)}
+        .pagination button:disabled{opacity:0.3;cursor:not-allowed}
+        .pagination button.active{background:var(--gold);color:#0a0a0f;border-color:var(--gold)}
+
+        .loading,.empty{text-align:center;padding:60px;color:var(--text-dim)}
+
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(15px);display:none;justify-content:center;align-items:center;z-index:1000}
+        .modal.show{display:flex}
+        .modal-content{background:#12121a;border:1px solid var(--border-gold);border-radius:20px;padding:32px;width:90%;max-width:520px;max-height:70vh;overflow-y:auto}
+        .modal-content h2{color:var(--gold);margin-bottom:20px;font-size:16px;font-weight:400;letter-spacing:2px}
+        .result-item{padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer}
+        .result-item:hover .result-title{color:var(--gold)}
+        .result-title{font-size:14px;color:#fff;margin-bottom:4px}
+        .result-meta{font-size:12px;color:var(--text-dim)}
+        .btn-close{width:100%;padding:12px;margin-top:16px;border-radius:10px;border:none;background:rgba(255,255,255,0.05);color:#fff;font-size:13px;cursor:pointer}
+        .btn-close:hover{background:var(--gold);color:#0a0a0f}
+
+        @media (max-width: 600px) {
+            .header{flex-direction:column;gap:16px}
+            .main{padding:80px 20px 40px}
+        }
+    </style>
+    <script src="js/particles.js"></script>
+</head>
+<body>
+    <div class="bg"></div>
+
+    <div class="header">
+        <h1>雅昌印制大奖</h1>
+        <div class="header-right">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="搜索获奖产品..." onkeyup="handleSearch(event)">
+            </div>
+            <button class="btn" onclick="location.href='index.html'">返回首页</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="breadcrumb">
+            <a href="index.html">首页</a>
+            <span>›</span>
+            <a href="#" id="awardLink">奖项</a>
+            <span>›</span>
+            <span id="filterTitle">筛选结果</span>
+        </div>
+
+        <div class="result-header">
+            <h2 id="pageTitle">获奖产品列表</h2>
+            <div class="count">共 <strong id="resultCount">-</strong> 条记录</div>
+        </div>
+
+        <div class="table-section">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>产品名称</th>
+                            <th>奖别</th>
+                            <th>获奖单位</th>
+                            <th>类型</th>
+                            <th>装订方式</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="searchModal">
+        <div class="modal-content">
+            <h2>搜索结果</h2>
+            <div id="searchResults"></div>
+            <button class="btn-close" onclick="closeSearch()">关闭</button>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const pageSize = 20;
+        let awardName = '';
+        let filterType = '';
+        let filterValue = '';
+
+        const params = new URLSearchParams(window.location.search);
+        awardName = decodeURIComponent(params.get('award') || '');
+        filterType = params.get('type') || '';
+        filterValue = decodeURIComponent(params.get('value') || '');
+
+        document.getElementById('awardLink').textContent = awardName;
+        document.getElementById('awardLink').href = 'award.html?award=' + encodeURIComponent(awardName);
+
+        if (filterType && filterValue) {
+            document.getElementById('filterTitle').textContent = filterValue;
+            document.getElementById('pageTitle').textContent = filterValue + ' 获奖明细';
+        } else {
+            document.getElementById('filterTitle').textContent = '全部';
+            document.getElementById('pageTitle').textContent = awardName + ' 获奖列表';
+        }
+
+        async function loadData() {
+            try {
+                const resp = await fetch('/api/awards/' + encodeURIComponent(awardName));
+                allData = await resp.json();
+
+                if (filterType === 'year') {
+                    filteredData = allData.filter(d => d.year === filterValue);
+                } else if (filterType === 'region') {
+                    filteredData = allData.filter(d => d.region === filterValue);
+                } else if (filterType === 'level') {
+                    if (filterValue === '其他') {
+                        const levelCounts = {};
+                        allData.forEach(d => {
+                            const level = (d.award_level || '').trim() || '未分类';
+                            levelCounts[level] = (levelCounts[level] || 0) + 1;
+                        });
+                        const sortedLevels = Object.entries(levelCounts).sort((a, b) => b[1] - a[1]);
+                        const top5 = new Set(sortedLevels.slice(0, 5).map(([l]) => l));
+                        filteredData = allData.filter(d => {
+                            const level = (d.award_level || '').trim() || '未分类';
+                            return !top5.has(level);
+                        });
+                    } else {
+                        filteredData = allData.filter(d => {
+                            const level = (d.award_level || '').trim() || '未分类';
+                            return level === filterValue;
+                        });
+                    }
+                } else {
+                    filteredData = allData;
+                }
+
+                document.getElementById('resultCount').textContent = filteredData.length;
+                renderTable();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('tableBody').innerHTML = '<tr><td colspan="5" class="empty">加载失败</td></tr>';
+            }
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            const total = filteredData.length;
+            const totalPages = Math.ceil(total / pageSize) || 1;
+            const start = (currentPage - 1) * pageSize;
+            const pageData = filteredData.slice(start, start + pageSize);
+
+            if (pageData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty">暂无数据</td></tr>';
+                document.getElementById('pagination').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = pageData.map(row => {
+                let levelBadge = 'badge-default';
+                const level = row.award_level || '';
+                if (level.match(/金|班尼|全场/)) levelBadge = 'badge-gold';
+                else if (level.match(/优/)) levelBadge = 'badge-silver';
+                else if (level.match(/秀/)) levelBadge = 'badge-bronze';
+
+                return '<tr onclick="viewProduct(' + row.id + ')">' +
+                    '<td>' + (row.product_name || '-') + '</td>' +
+                    '<td>' + (level ? '<span class="badge ' + levelBadge + '">' + level + '</span>' : '-') + '</td>' +
+                    '<td>' + (row.region || '-') + '</td>' +
+                    '<td>' + (row.photography_type || '-') + '</td>' +
+                    '<td>' + (row.binding || '-') + '</td></tr>';
+            }).join('');
+
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const pagination = document.getElementById('pagination');
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '<button onclick="changePage(' + (currentPage - 1) + ')" ' + (currentPage === 1 ? 'disabled' : '') + '>上一页</button>';
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    html += '<button onclick="changePage(' + i + ')" class="' + (i === currentPage ? 'active' : '') + '">' + i + '</button>';
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    html += '<span style="color:#666">...</span>';
+                }
+            }
+            html += '<button onclick="changePage(' + (currentPage + 1) + ')" ' + (currentPage === totalPages ? 'disabled' : '') + '>下一页</button>';
+            pagination.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+            document.querySelector('.table-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function viewProduct(id) { window.location.href = 'product.html?id=' + id; }
+
+        async function handleSearch(e) { if (e.key === 'Enter') doSearch(); }
+
+        async function doSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) return;
+            try {
+                const resp = await fetch('/api/search?q=' + encodeURIComponent(q));
+                const results = await resp.json();
+                const container = document.getElementById('searchResults');
+
+                if (results.length === 0) {
+                    container.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:30px">未找到相关产品</p>';
+                } else {
+                    container.innerHTML = results.map(r =>
+                        '<div class="result-item" onclick="viewProduct(' + r.id + ')">' +
+                            '<div class="result-title">' + (r.product_name || '未知产品') + '</div>' +
+                            '<div class="result-meta">' + r.name + ' · ' + (r.award_level || '无等级') + '</div>' +
+                        '</div>'
+                    ).join('');
+                }
+                document.getElementById('searchModal').classList.add('show');
+            } catch (e) { console.error(e); }
+        }
+
+        function closeSearch() { document.getElementById('searchModal').classList.remove('show'); }
+
+        loadData();
+    </script>
+</body>
+</html>

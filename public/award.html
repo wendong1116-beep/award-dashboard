@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>奖项详情</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --gold:#c9a227;
+            --gold-light:#e8d48b;
+            --gold-dark:#8b7020;
+            --bg-dark:#0a0a0f;
+            --bg-card:#12121a;
+            --border-gold:rgba(201,162,39,0.25);
+            --text-dim:rgba(255,255,255,0.45);
+            --text-light:rgba(255,255,255,0.85)
+        }
+        body{
+            font-family:'Noto Serif SC','Playfair Display',serif;
+            background:var(--bg-dark);
+            color:#fff;
+            min-height:100vh
+        }
+
+        /* 背景层次 */
+        .bg{position:fixed;inset:0;z-index:-1}
+        .bg::before{
+            content:'';position:absolute;inset:0;
+            background:radial-gradient(ellipse 70% 50% at 50% 40%,rgba(201,162,39,0.07) 0%,transparent 60%);
+        }
+        .bg::after{
+            content:'';position:absolute;inset:0;
+            background:linear-gradient(180deg,rgba(10,10,15,0.6) 0%,transparent 20%);
+        }
+
+        /* 顶部导航 */
+        .header{
+            position:fixed;top:0;left:0;right:0;z-index:100;
+            padding:24px 60px;display:flex;justify-content:space-between;align-items:center;
+            background:linear-gradient(to bottom,rgba(10,10,15,0.95),transparent)
+        }
+        .header h1{font-size:20px;color:var(--gold);font-weight:600;letter-spacing:6px}
+        .header-right{display:flex;align-items:center;gap:24px}
+        .search-box{position:relative}
+        .search-box input{
+            width:260px;padding:12px 20px;padding-left:46px;
+            border-radius:28px;border:1px solid var(--border-gold);
+            background:rgba(255,255,255,0.03);color:#fff;font-size:14px;letter-spacing:1px
+        }
+        .search-box input:focus{outline:none;border-color:var(--gold)}
+        .search-box input::placeholder{color:var(--text-dim)}
+        .search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--gold);opacity:0.5}
+        .btn{
+            padding:12px 28px;border-radius:28px;border:1px solid var(--border-gold);
+            background:transparent;color:var(--text-light);font-size:14px;cursor:pointer;letter-spacing:1px
+        }
+        .btn:hover{background:var(--gold);color:#0a0a0f;border-color:var(--gold)}
+
+        /* 主内容区 */
+        .main{
+            max-width:1400px;margin:0 auto;
+            padding:140px 80px 80px
+        }
+
+        /* 面包屑 */
+        .breadcrumb{
+            display:flex;align-items:center;gap:12px;
+            margin-bottom:50px;font-size:14px;letter-spacing:1px
+        }
+        .breadcrumb a{color:var(--gold);text-decoration:none}
+        .breadcrumb a:hover{text-decoration:underline}
+        .breadcrumb span{color:var(--text-dim)}
+
+        /* 页面标题 */
+        .page-title{
+            text-align:center;margin-bottom:70px
+        }
+        .page-title h2{
+            font-family:'Playfair Display',serif;
+            font-size:52px;font-weight:400;color:var(--gold);
+            letter-spacing:12px;margin-bottom:20px
+        }
+        .page-title .divider{
+            width:100px;height:1px;
+            background:linear-gradient(90deg,transparent,var(--gold),transparent);
+            margin:0 auto 20px
+        }
+        .page-title p{
+            font-size:13px;color:var(--text-dim);letter-spacing:6px
+        }
+        .page-title .award-desc{
+            font-size:14px;color:var(--text-dim);letter-spacing:1px;
+            line-height:1.9;max-width:800px;margin:25px auto 0;
+            text-align:left;padding:0 20px;
+            border-left:2px solid var(--gold);opacity:0.85
+        }
+
+        /* 统计卡片区 */
+        .stats-section{
+            margin-bottom:80px
+        }
+        .stats-section h3{
+            font-size:13px;color:var(--text-dim);letter-spacing:4px;
+            margin-bottom:30px;font-weight:400;text-align:center
+        }
+        .stats-grid{
+            display:flex;justify-content:center;gap:30px;flex-wrap:wrap
+        }
+        .stat-card{
+            position:relative;padding:40px 50px;
+            background:rgba(255,255,255,0.02);
+            border:1px solid var(--border-gold);
+            border-radius:20px;text-align:center;min-width:180px;
+            cursor:pointer;transition:all 0.4s ease;
+            overflow:hidden
+        }
+        .stat-card::before{
+            content:'';position:absolute;inset:0;
+            background:linear-gradient(135deg,rgba(201,162,39,0.1) 0%,transparent 50%);
+            opacity:0;transition:opacity 0.4s
+        }
+        .stat-card:hover{
+            border-color:rgba(201,162,39,0.5);
+            transform:translateY(-4px);
+            box-shadow:0 20px 60px rgba(201,162,39,0.15)
+        }
+        .stat-card:hover::before{opacity:1}
+        .stat-card .value{
+            font-family:'Playfair Display',serif;
+            font-size:48px;font-weight:700;color:var(--gold);line-height:1;
+            position:relative;z-index:1
+        }
+        .stat-card .label{
+            font-size:14px;color:var(--text-dim);margin-top:14px;
+            letter-spacing:2px;position:relative;z-index:1
+        }
+
+        /* 图表区 */
+        .charts-section{
+            margin-bottom:60px
+        }
+        .charts-section h3{
+            font-size:13px;color:var(--text-dim);letter-spacing:4px;
+            margin-bottom:30px;font-weight:400;text-align:center
+        }
+        .charts-grid{
+            display:grid;grid-template-columns:repeat(3, 1fr);gap:30px
+        }
+        .chart-card{
+            background:rgba(255,255,255,0.015);
+            border:1px solid var(--border-gold);
+            border-radius:24px;padding:36px;
+            transition:all 0.3s ease
+        }
+        .chart-card:hover{
+            border-color:rgba(201,162,39,0.4);
+            box-shadow:0 10px 40px rgba(201,162,39,0.08)
+        }
+        .chart-card h4{
+            font-size:15px;color:var(--text-light);margin-bottom:28px;font-weight:400;
+            letter-spacing:2px;text-align:center
+        }
+        .chart-container{height:320px}
+
+        /* Modal */
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(20px);display:none;justify-content:center;align-items:center;z-index:1000}
+        .modal.show{display:flex}
+        .modal-content{
+            background:var(--bg-card);border:1px solid var(--border-gold);
+            border-radius:24px;padding:40px;width:90%;max-width:560px;max-height:75vh;overflow-y:auto
+        }
+        .modal-content h2{
+            color:var(--gold);margin-bottom:24px;font-size:16px;font-weight:400;letter-spacing:3px
+        }
+        .result-item{
+            padding:18px 0;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer
+        }
+        .result-item:hover .result-title{color:var(--gold)}
+        .result-title{font-size:15px;color:#fff;margin-bottom:6px}
+        .result-meta{font-size:13px;color:var(--text-dim)}
+        .btn-close{
+            width:100%;padding:14px;margin-top:24px;border-radius:12px;
+            border:none;background:rgba(255,255,255,0.05);color:#fff;font-size:14px;cursor:pointer
+        }
+        .btn-close:hover{background:var(--gold);color:#0a0a0f}
+
+        @media (max-width: 1100px) {
+            .charts-grid{grid-template-columns:1fr}
+        }
+        @media (max-width: 900px) {
+            .header{padding:20px 30px}
+            .main{padding:120px 30px 60px}
+            .page-title h2{font-size:40px;letter-spacing:6px}
+            .stats-grid{gap:20px}
+            .stat-card{padding:30px 36px;min-width:150px}
+            .stat-card .value{font-size:38px}
+        }
+        @media (max-width: 600px) {
+            .header{flex-direction:column;gap:16px}
+            .main{padding:100px 20px 40px}
+            .page-title h2{font-size:28px;letter-spacing:4px}
+            .stats-grid{flex-direction:column;align-items:center}
+            .stat-card{width:100%;max-width:300px}
+        }
+    </style>
+    <script src="js/particles.js"></script>
+</head>
+<body>
+    <div class="bg"></div>
+
+    <div class="header">
+        <h1>雅昌印制大奖</h1>
+        <div class="header-right">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="搜索获奖产品..." onkeyup="handleSearch(event)">
+            </div>
+            <button class="btn" onclick="location.href='index.html'">返回首页</button>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="breadcrumb">
+            <a href="index.html">首页</a>
+            <span>›</span>
+            <span id="awardTitle">奖项详情</span>
+        </div>
+
+        <div class="page-title">
+            <h2 id="awardTitleMain">AWARD DETAILS</h2>
+            <div class="divider"></div>
+            <p>ACHIEVEMENT OVERVIEW</p>
+            <p class="award-desc" id="awardDesc"></p>
+        </div>
+
+        <div class="stats-section">
+            <h3>数据统计</h3>
+            <div class="stats-grid" id="statsRow"></div>
+        </div>
+
+        <div class="charts-section">
+            <h3>分布分析</h3>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h4>年度分布</h4>
+                    <div class="chart-container" id="yearChart"></div>
+                </div>
+                <div class="chart-card">
+                    <h4>地区分布</h4>
+                    <div class="chart-container" id="regionChart"></div>
+                </div>
+                <div class="chart-card">
+                    <h4 id="levelChartTitle">等级分布</h4>
+                    <div class="chart-container" id="levelChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="searchModal">
+        <div class="modal-content">
+            <h2>搜索结果</h2>
+            <div id="searchResults"></div>
+            <button class="btn-close" onclick="closeSearch()">关闭</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script>
+        let awardName = '';
+        let allData = [];
+        let yearChart, regionChart, levelChart;
+
+        const params = new URLSearchParams(window.location.search);
+        awardName = decodeURIComponent(params.get('award') || '');
+        document.getElementById('awardTitle').textContent = awardName;
+        document.getElementById('awardTitleMain').textContent = awardName;
+
+        const awardDescriptions = {
+            '香港印制大奖': '香港印制大奖自 1989 年创办以来，已成为亚太地区极具影响力的印刷行业权威奖项。赛事以专业严谨的评审，表彰在印制工艺、创意设计、绿色环保等方面表现卓越的作品，推动行业技术创新与品质提升，助力香港及大湾区印刷产业高质量发展。',
+            '上海印制大奖': '上海印制大奖是长三角乃至全国印刷领域极具影响力的专业奖项，聚焦印制工艺、创意设计与技术创新，通过权威评审发掘行业精品，表彰优秀印刷企业与作品。奖项立足上海、辐射全国，推动产业提质升级与绿色发展，彰显中国印刷行业的匠心水准与综合实力。',
+            '世界最美的书': '"世界最美的书" 创立于 1963 年德国莱比锡，1991 年起由德国图书艺术基金会主办，是全球图书出版界最具权威性的设计赛事之一。每年吸引 30 余国近 600 件作品参评，以国际评委团专业评审，表彰在艺术美学、印制工艺、设计创新与阅读体验上兼具卓越表现的图书。设金字母奖、金银铜奖及荣誉奖，中国作品屡获佳绩，成为东西方书籍艺术交流的重要桥梁与文化展示窗口。',
+            '中华印制大奖': '中华印制大奖是经国务院批准、两岸四地印刷行业协会联合主办的华人印刷界最高荣誉，被誉为中国印刷界 "奥斯卡"。自 2007 年创办以来，以科学严谨、与国际接轨的评审体系，表彰出版物、商业、包装等全品类印刷精品，推动行业技术创新与品质提升，成为连接全球华人印刷产业的权威交流平台与品质标杆。',
+            '中国最美的书': '"中国最美的书" 是上海市新闻出版局主办的年度书籍设计权威评选，2003 年创立，每年选出约 25 种佳作。以国际接轨标准评审，强调内容与形式完美融合、设计整体性与阅读体验统一。已推 521 种精品，25 种获 "世界最美的书"，是中国书籍设计走向世界的核心平台与文化展示窗口。',
+            '亚洲印制大奖': '亚洲印制大奖（APA）是亚洲印刷业最具影响力的权威赛事，2003 年创立，由多国印刷协会联合主办。以国际标准匿名评审，覆盖书籍、包装等全品类，表彰顶尖印制工艺与创新设计。吸引亚太 10 余国家地区参赛，是亚洲印刷企业品质实力的核心证明，推动行业技术升级与国际交流。',
+            '全国书籍装帧大奖': '全国书籍设计艺术展（原全国书籍装帧大奖）始于 1959 年，是经中央批准的国家级书籍设计权威赛事，四年一届，被誉为中国书籍设计 "风向标"。由中国出版工作者协会与中国美术家协会主办，以国际视野评审，覆盖文学、艺术、社科等全品类，表彰内容与形式完美融合的精品，孕育国际知名设计师，推动汉语出版物设计水平提升与文化传播。',
+            '政府出版奖': '中国出版政府奖是国家新闻出版署主办的中国新闻出版领域最高奖项，2005 年设立，2007 年首评，每三年一届。涵盖图书、期刊、音像电子网络出版物、印刷复制、装帧设计、先进出版单位及优秀出版人物 7 大类，共设 240 个奖励名额。作为国家最高级别出版奖项，它延续国家图书奖精神，引领行业方向，表彰卓越成果，推动出版高质量发展与文化强国建设。',
+            '红星奖': '中国设计红星奖（Red Star Design Award）是 2006 年创立的国家级工业设计最高奖项，被誉为中国设计界 "奥斯卡"。由中国工业设计协会等发起，秉持 "公平公正、国际化" 原则，以创新、实用、环保等标准评审，覆盖全品类上市产品。获国际工业设计协会联合会认证，与红点、IF、IDEA 齐名，吸引全球 18 国参赛，是中国设计走向世界的核心平台与创新标杆。',
+            '美国印制大奖': '美国印制大奖（Premier Print Awards）创办于 1950 年，由 PRINTING United Alliance 主办，被誉为全球印刷界 "奥斯卡"。最高荣誉"班尼奖 (Benny Award)"以印刷先驱本杰明・富兰克林命名，表彰无瑕印制工艺。赛事覆盖书籍、包装等全品类，吸引全球数十国参赛，以非营利、公开公正的评审标准，成为全球印刷品质的最高标杆与行业技术交流的核心平台。',
+            '金光印艺大奖': '金光印艺大奖（APP Print Awards）2007 年由金光集团 APP（中国）创办，被誉为"纸业奥斯卡"。秉持"公平、公正、公开、公益"原则，以印刷质量、技术难度、设计创新为核心评审标准。覆盖书籍画册、期刊杂志、包装标签、宣传品等全品类，吸引全球 20 余国家地区参赛。作为印艺界权威赛事，推动最新印刷科技应用，促进全球印刷企业交流合作，树立行业品质标杆。'
+        };
+        if (awardDescriptions[awardName]) {
+            document.getElementById('awardDesc').textContent = awardDescriptions[awardName];
+        }
+
+        async function loadData() {
+            try {
+                const [productsResp, statsResp] = await Promise.all([
+                    fetch('/api/awards/' + encodeURIComponent(awardName)),
+                    fetch('/api/stats/' + encodeURIComponent(awardName))
+                ]);
+
+                allData = await productsResp.json();
+                const stats = await statsResp.json();
+
+                renderStats(allData);
+                initCharts(stats);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function setFilter(type, value) {
+            window.location.href = 'filter.html?award=' + encodeURIComponent(awardName) + '&type=' + type + '&value=' + encodeURIComponent(value);
+        }
+
+        function renderStats(data) {
+            const levelCounts = {};
+            data.forEach(d => {
+                const level = (d.award_level || '').trim() || '未分类';
+                levelCounts[level] = (levelCounts[level] || 0) + 1;
+            });
+
+            const statsRow = document.getElementById('statsRow');
+            let html = '<div class="stat-card" onclick="setFilter(\'all\', \'\')"><div class="value">' + data.length + '</div><div class="label">获奖总数</div></div>';
+
+            const sortedLevels = Object.entries(levelCounts).sort((a, b) => b[1] - a[1]);
+            const topN = 5;
+            let otherCount = 0;
+            sortedLevels.forEach(([level, count], idx) => {
+                if (idx < topN) {
+                    html += '<div class="stat-card" onclick="setFilter(\'level\', \'' + level + '\')"><div class="value">' + count + '</div><div class="label">' + level + '</div></div>';
+                } else {
+                    otherCount += count;
+                }
+            });
+
+            if (otherCount > 0) {
+                html += '<div class="stat-card" onclick="setFilter(\'level\', \'其他\')"><div class="value">' + otherCount + '</div><div class="label">其他</div></div>';
+            }
+
+            statsRow.innerHTML = html;
+        }
+
+        function initCharts(stats) {
+            yearChart = echarts.init(document.getElementById('yearChart'));
+            regionChart = echarts.init(document.getElementById('regionChart'));
+            levelChart = echarts.init(document.getElementById('levelChart'));
+
+            const colors = ['#c9a227', '#e8d48b', '#8b7020', '#d4af37', '#f4d03f', '#b8860b'];
+
+            // 年度分布 - 横向柱状图 (按数量排序显示前10)
+            const topYears = [...stats.byYear].sort((a, b) => parseInt(a.year) - parseInt(b.year));
+            const displayYears = topYears.sort((a, b) => parseInt(a.year) - parseInt(b.year));
+            yearChart.setOption({
+                tooltip: { trigger: 'axis', backgroundColor: 'rgba(18,18,26,0.95)', borderColor: 'rgba(201,162,39,0.3)', textStyle: { color: '#fff' } },
+                grid: { left: '5%', right: '12%', bottom: '5%', top: '5%', containLabel: true },
+                xAxis: { type: 'value', axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }, axisLabel: { color: 'rgba(255,255,255,0.5)' } },
+                yAxis: { type: 'category', data: displayYears.map(s => s.year), axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, axisLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 12 } },
+                series: [{ type: 'bar', data: displayYears.map((s, i) => ({ value: s.count, itemStyle: { color: colors[i % colors.length], borderRadius: [0, 6, 6, 0] } })), barWidth: '55%' }]
+            });
+
+            // 地区分布 - 饼图
+            const topRegions = stats.byRegion.slice(0, 6);
+            regionChart.setOption({
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(18,18,26,0.95)', borderColor: 'rgba(201,162,39,0.3)', textStyle: { color: '#fff' } },
+                series: [{
+                    type: 'pie', radius: ['45%', '78%'],
+                    data: topRegions.map((s, i) => ({ name: s.region || '未知', value: s.count, itemStyle: { color: colors[i % colors.length] } })),
+                    label: { show: true, color: 'rgba(255,255,255,0.85)', fontSize: 13, position: 'outside', formatter: '{b}', padding: [0, -20, 0, -20], fontSize: 13 },
+                    labelLine: { show: true, length: 15, length2: 10, lineStyle: { color: 'rgba(201,162,39,0.4)', width: 1 } }
+                }]
+            });
+
+            // 等级分布 - 优先使用奖项数据，否则使用等级数据
+            const useCategory = stats.byCategory && stats.byCategory.length > 0;
+            const chartData = useCategory
+                ? stats.byCategory.map(s => ({ name: (s.award_category || '').trim() || '未分类', value: s.count }))
+                : stats.byLevel.map(s => ({ name: (s.award_level || '').trim() || '未分类', value: s.count }));
+            document.getElementById('levelChartTitle').textContent = useCategory ? '奖项分布' : '等级分布';
+
+            levelChart.setOption({
+                tooltip: { trigger: 'item', backgroundColor: 'rgba(18,18,26,0.95)', borderColor: 'rgba(201,162,39,0.3)', textStyle: { color: '#fff' } },
+                series: [{
+                    type: 'pie', radius: ['45%', '78%'],
+                    data: chartData.map((s, i) => ({ name: s.name, value: s.value, itemStyle: { color: colors[i % colors.length] } })),
+                    label: { show: true, color: 'rgba(255,255,255,0.85)', fontSize: 13, position: 'outside', formatter: '{b}', padding: [0, -20, 0, -20] },
+                    labelLine: { show: true, length: 15, length2: 10, lineStyle: { color: 'rgba(201,162,39,0.4)', width: 1 } }
+                }]
+            });
+
+            // Click events - use dataIndex to get year from yAxis data
+            yearChart.on('click', params => {
+                const year = params.name || (params.dataIndex !== undefined ? yearChart.getOption().yAxis[0].data[params.dataIndex] : '');
+                if (year) setFilter('year', year);
+            });
+
+            regionChart.on('click', params => {
+                setFilter('region', params.name);
+            });
+
+            levelChart.on('click', params => {
+                setFilter('level', params.name);
+            });
+
+            window.addEventListener('resize', () => {
+                yearChart.resize();
+                regionChart.resize();
+                levelChart.resize();
+            });
+        }
+
+        async function handleSearch(e) { if (e.key === 'Enter') doSearch(); }
+
+        async function doSearch() {
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) return;
+            try {
+                const resp = await fetch('/api/search?q=' + encodeURIComponent(q));
+                const results = await resp.json();
+                const container = document.getElementById('searchResults');
+
+                if (results.length === 0) {
+                    container.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:40px">未找到相关产品</p>';
+                } else {
+                    container.innerHTML = results.map(r =>
+                        '<div class="result-item" onclick="viewProduct(' + r.id + ')">' +
+                            '<div class="result-title">' + (r.product_name || '未知产品') + '</div>' +
+                            '<div class="result-meta">' + r.name + ' · ' + (r.award_level || '无等级') + '</div>' +
+                        '</div>'
+                    ).join('');
+                }
+                document.getElementById('searchModal').classList.add('show');
+            } catch (e) { console.error(e); }
+        }
+
+        function closeSearch() { document.getElementById('searchModal').classList.remove('show'); }
+        function viewProduct(id) { window.location.href = 'product.html?id=' + id; }
+
+        loadData();
+    </script>
+</body>
+</html>

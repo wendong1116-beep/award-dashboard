@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雅昌印制大奖可视化系统</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 20px 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #e94560, #f39c12);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .header p { color: #888; margin-top: 5px; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px 40px; }
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(233,69,96,0.2);
+        }
+        .stat-card .value { font-size: 36px; font-weight: 700; color: #e94560; }
+        .stat-card .label { color: #888; font-size: 14px; margin-top: 5px; }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #888;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        .tab:hover { background: rgba(255,255,255,0.1); }
+        .tab.active { background: #e94560; color: #fff; border-color: #e94560; }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .chart-card h3 { margin-bottom: 15px; font-size: 16px; color: #ccc; }
+        .chart-container { height: 300px; }
+        .table-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .table-section h3 { margin-bottom: 15px; font-size: 16px; color: #ccc; }
+        .table-wrapper { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; }
+        th { color: #888; font-weight: 600; font-size: 13px; text-transform: uppercase; cursor: pointer; }
+        th:hover { color: #e94560; }
+        td { font-size: 14px; color: #ccc; }
+        tr:hover td { background: rgba(233,69,96,0.1); }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-gold { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .badge-silver { background: linear-gradient(135deg, #bdc3c7, #95a5a6); }
+        .badge-bronze { background: linear-gradient(135deg, #cd6133, #b8560b); }
+        .badge-default { background: rgba(255,255,255,0.1); }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        .pagination button {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .pagination button:hover:not(:disabled) { background: #e94560; border-color: #e94560; color: #fff; }
+        .pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+        .source-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: rgba(233,69,96,0.2);
+            color: #e94560;
+            font-size: 11px;
+        }
+        .search-box {
+            margin-bottom: 15px;
+        }
+        .search-box input {
+            width: 100%;
+            max-width: 400px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 14px;
+        }
+        .search-box input::placeholder { color: #666; }
+        .search-box input:focus { outline: none; border-color: #e94560; }
+        @media (max-width: 768px) {
+            .chart-grid { grid-template-columns: 1fr; }
+            .container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>雅昌印制大奖可视化系统</h1>
+        <p>涵盖12类印制大奖获奖数据，支持多维度筛选与交互分析</p>
+    </div>
+
+    <div class="container">
+        <div class="stats-row" id="statsRow"></div>
+
+        <div class="tabs" id="tabs"></div>
+
+        <div class="chart-grid">
+            <div class="chart-card">
+                <h3>各年份/赛事获奖数量</h3>
+                <div class="chart-container" id="awardChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>获奖单位分布</h3>
+                <div class="chart-container" id="companyChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>奖别等级分布</h3>
+                <div class="chart-container" id="levelChart"></div>
+            </div>
+            <div class="chart-card">
+                <h3>产品类型分布</h3>
+                <div class="chart-container" id="typeChart"></div>
+            </div>
+        </div>
+
+        <div class="table-section">
+            <h3>获奖产品明细 <span id="tableCount"></span></h3>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索产品名称..." oninput="searchTable()">
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let filteredData = [];
+        let currentSource = '全部';
+        let currentPage = 1;
+        let searchTerm = '';
+        const pageSize = 15;
+        let chartInstances = {};
+
+        async function loadData() {
+            try {
+                const resp = await fetch('data.json');
+                const result = await resp.json();
+                allData = result.records;
+                filteredData = [...allData];
+                initStats();
+                initTabs();
+                initCharts();
+                renderTable();
+            } catch (e) {
+                console.error('Load error:', e);
+            }
+        }
+
+        function initStats() {
+            const statsRow = document.getElementById('statsRow');
+            const sources = new Set(allData.map(d => d['来源'])).size;
+            const companies = new Set(allData.filter(d => d['获奖单位']).map(d => d['获奖单位'])).size;
+
+            statsRow.innerHTML = `
+                <div class="stat-card">
+                    <div class="value">${allData.length}</div>
+                    <div class="label">总获奖数量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${sources}</div>
+                    <div class="label">参与赛事数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${companies}</div>
+                    <div class="label">获奖单位数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">${allData.filter(d => (d['奖别'] || '').includes('金') || (d['奖别'] || '').includes('班尼') || (d['奖别'] || '').includes('全场')).length}</div>
+                    <div class="label">金奖及以上</div>
+                </div>
+            `;
+        }
+
+        function initTabs() {
+            const sources = ['全部', ...new Set(allData.map(d => d['来源']).filter(Boolean))];
+            const tabs = document.getElementById('tabs');
+            tabs.innerHTML = sources.map(s => `
+                <button class="tab ${s === '全部' ? 'active' : ''}" onclick="filterBySource('${s}')">${s}</button>
+            `).join('');
+        }
+
+        function filterBySource(source) {
+            currentSource = source;
+            currentPage = 1;
+            searchTerm = '';
+            document.getElementById('searchInput').value = '';
+
+            if (source === '全部') {
+                filteredData = [...allData];
+            } else {
+                filteredData = allData.filter(d => d['来源'] === source);
+            }
+
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.textContent === source);
+            });
+
+            updateCharts();
+            renderTable();
+        }
+
+        function searchTable() {
+            searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            currentPage = 1;
+            let base = currentSource === '全部' ? [...allData] : allData.filter(d => d['来源'] === currentSource);
+            if (searchTerm) {
+                filteredData = base.filter(d => {
+                    const name = (d['获奖产品'] || d['产品名'] || d['获奖项目'] || '').toLowerCase();
+                    return name.includes(searchTerm);
+                });
+            } else {
+                filteredData = base;
+            }
+            updateCharts();
+            renderTable();
+        }
+
+        function initCharts() {
+            const theme = {
+                textStyle: { color: '#888' },
+                title: { textStyle: { color: '#ccc' } }
+            };
+
+            chartInstances.award = echarts.init(document.getElementById('awardChart'));
+            chartInstances.company = echarts.init(document.getElementById('companyChart'));
+            chartInstances.level = echarts.init(document.getElementById('levelChart'));
+            chartInstances.type = echarts.init(document.getElementById('typeChart'));
+
+            updateCharts();
+
+            window.addEventListener('resize', () => {
+                Object.values(chartInstances).forEach(c => c.resize());
+            });
+        }
+
+        function getChartData() {
+            // Award/Year distribution
+            const awardCounts = {};
+            filteredData.forEach(d => {
+                const key = d['奖项'] || d['来源'] || '未知';
+                awardCounts[key] = (awardCounts[key] || 0) + 1;
+            });
+            const awardSorted = Object.entries(awardCounts).sort((a, b) => b[1] - a[1]).slice(0, 15);
+
+            // Company distribution
+            const companyCounts = {};
+            filteredData.forEach(d => {
+                const c = d['获奖单位'] || '未知';
+                companyCounts[c] = (companyCounts[c] || 0) + 1;
+            });
+            const companySorted = Object.entries(companyCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+            // Level distribution
+            const levelCounts = {};
+            filteredData.forEach(d => {
+                let l = d['奖别'] || d['奖别'] || '其他';
+                l = l.toString().replace(/\n/g, '').trim();
+                if (l.includes('金') || l.includes('班尼') || l.includes('全场')) l = '金奖/班尼/全场';
+                else if (l.includes('优')) l = '优异/优秀奖';
+                else l = '其他';
+                levelCounts[l] = (levelCounts[l] || 0) + 1;
+            });
+
+            // Type distribution
+            const typeCounts = {};
+            filteredData.forEach(d => {
+                const t = d['摄影'] || d['类别'] || d['类别.1'] || '其他';
+                typeCounts[t] = (typeCounts[t] || 0) + 1;
+            });
+            const typeSorted = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+            return { awardSorted, companySorted, levelCounts, typeSorted };
+        }
+
+        function updateCharts() {
+            const data = getChartData();
+            const colors = ['#e94560', '#f39c12', '#3498db', '#2ecc71', '#9b59b6', '#e74c3c', '#1abc9c', '#34495e'];
+
+            chartInstances.award.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'value', axisLine: { lineStyle: { color: '#444' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                yAxis: { type: 'category', data: awardSorted.map(s => s[0]), axisLine: { lineStyle: { color: '#444' } }, axisLabel: { color: '#888', fontSize: 11 } },
+                series: [{ type: 'bar', data: awardSorted.map((s, i) => ({ value: s[1], itemStyle: { color: colors[i % colors.length] } })), barRadius: 4 }],
+                graphic: awardSorted.length === 0 ? [{ type: 'text', left: 'center', top: 'center', style: { text: '无数据', fill: '#666', font: '14px' } }] : []
+            });
+
+            chartInstances.company.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: companySorted.map(s => s[0]), axisLine: { lineStyle: { color: '#444' } }, axisLabel: { color: '#888', rotate: 30 } },
+                yAxis: { type: 'value', axisLine: { lineStyle: { color: '#444' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                series: [{ type: 'bar', data: companySorted.map((s, i) => ({ value: s[1], itemStyle: { color: colors[i % colors.length], borderRadius: [4, 4, 0, 0] } })) }]
+            });
+
+            chartInstances.level.setOption({
+                tooltip: { trigger: 'item' },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    data: Object.entries(data.levelCounts).map(([name, val]) => ({ name, value: val })),
+                    label: { color: '#ccc' },
+                    itemStyle: { borderRadius: 6 }
+                }],
+                graphic: Object.keys(data.levelCounts).length === 0 ? [{ type: 'text', left: 'center', top: 'center', style: { text: '无数据', fill: '#666', font: '14px' } }] : []
+            });
+
+            chartInstances.type.setOption({
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: data.typeSorted.map(s => s[0]), axisLine: { lineStyle: { color: '#444' } }, axisLabel: { color: '#888', rotate: 30 } },
+                yAxis: { type: 'value', axisLine: { lineStyle: { color: '#444' } }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                series: [{ type: 'bar', data: data.typeSorted.map((s, i) => ({ value: s[1], itemStyle: { color: colors[i % colors.length], borderRadius: [4, 4, 0, 0] } })) }]
+            });
+        }
+
+        function getColumns() {
+            if (currentSource === '美国印制大奖') {
+                return [
+                    { key: '序号', label: '序号' },
+                    { key: '奖项', label: '奖项名称' },
+                    { key: '奖别', label: '奖别' },
+                    { key: '获奖产品', label: '获奖产品' },
+                    { key: '摄影', label: '摄影类型' },
+                    { key: '获奖单位', label: '获奖单位' },
+                    { key: '装订方式', label: '装订方式' }
+                ];
+            } else if (currentSource === '香港印制大奖') {
+                return [
+                    { key: '序号', label: '序号' },
+                    { key: '奖项', label: '奖项名称' },
+                    { key: '奖别', label: '奖别' },
+                    { key: '获奖产品', label: '获奖产品' },
+                    { key: '获奖单位', label: '获奖单位' },
+                    { key: '装订方式', label: '装订方式' }
+                ];
+            } else if (currentSource === '中华印制大奖') {
+                return [
+                    { key: '序号', label: '序号' },
+                    { key: '奖项', label: '奖项名称' },
+                    { key: '产品名', label: '产品名称' },
+                    { key: '获奖单位', label: '获奖单位' },
+                    { key: '装订方式', label: '装订方式' }
+                ];
+            } else if (currentSource === '中国最美的书' || currentSource === '世界最美的书') {
+                return [
+                    { key: '序号', label: '序号' },
+                    { key: '年份', label: '年份' },
+                    { key: '明细', label: '奖项明细' },
+                    { key: '产品名', label: '产品名称' },
+                    { key: '获奖单位', label: '获奖单位' }
+                ];
+            } else {
+                const cols = [];
+                if (currentSource === '金光印艺大奖') {
+                    cols.push({ key: '奖项', label: '奖项' }, { key: '类别', label: '类别' });
+                }
+                cols.push({ key: '获奖产品', label: '获奖产品' }, { key: '获奖单位', label: '获奖单位' });
+                return cols;
+            }
+        }
+
+        function renderTable() {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            const cols = getColumns();
+
+            thead.innerHTML = `<tr>${cols.map(c => `<th>${c.label}</th>`).join('')}</tr>`;
+
+            const start = (currentPage - 1) * pageSize;
+            const pageData = filteredData.slice(start, start + pageSize);
+
+            tbody.innerHTML = pageData.map(row => `
+                <tr>
+                    ${cols.map(c => {
+                        let val = row[c.key] ?? '-';
+                        if (c.key === '奖项' && currentSource === '全部') {
+                            return `<td><span class="source-tag">${row['来源']}</span></td>`;
+                        }
+                        if (c.key === '奖别' && val !== '-') {
+                            let cls = 'badge-default';
+                            if (val.includes('金') || val.includes('班尼') || val.includes('全场')) cls = 'badge-gold';
+                            else if (val.includes('优')) cls = 'badge-silver';
+                            return `<td><span class="badge ${cls}">${val}</span></td>`;
+                        }
+                        return `<td>${val}</td>`;
+                    }).join('')}
+                </tr>
+            `).join('');
+
+            document.getElementById('tableCount').textContent = `(${filteredData.length} 条记录)`;
+            renderPagination();
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+            const pagination = document.getElementById('pagination');
+
+            let html = `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>`;
+
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+            if (startPage > 1) {
+                html += `<button onclick="changePage(1)">1</button>`;
+                if (startPage > 2) html += `<span style="color:#666">...</span>`;
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const style = i === currentPage ? 'style="background:#e94560;border-color:#e94560;color:#fff"' : '';
+                html += `<button onclick="changePage(${i})" ${style}>${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) html += `<span style="color:#666">...</span>`;
+                html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
+            }
+
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>`;
+            pagination.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredData.length / pageSize) || 1;
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+            document.querySelector('.table-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

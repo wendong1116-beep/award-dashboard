@@ -1,0 +1,248 @@
+import express from 'express';
+import cors from 'cors';
+import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import * as db from './database.js';
+import { login, logout, requireAuth, isAuthenticated } from './auth.js';
+import * as XLSX from 'xlsx';
+import config from './config.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
+
+const storage = multer.diskStorage({
+    destination: path.join(__dirname, 'uploads'),
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+const upload = multer({ storage });
+
+// Auth routes
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+    const token = await login(username, password);
+    if (token) {
+        res.json({ success: true, token });
+    } else {
+        res.status(401).json({ error: 'Invalid credentials' });
+    }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+    const header = req.headers['authorization'] || req.headers['Authorization'];
+    const token = header && header.startsWith('Bearer ') ? header.slice(7) : null;
+    logout(token);
+    res.json({ success: true });
+});
+
+app.get('/api/auth/check', (req, res) => {
+    const header = req.headers['authorization'] || req.headers['Authorization'];
+    const token = header && header.startsWith('Bearer ') ? header.slice(7) : null;
+    res.json({ authenticated: isAuthenticated(token) });
+});
+
+// Awards routes
+app.get('/api/awards', (req, res) => {
+    try {
+        const awards = db.getAwardNames();
+        const result = awards.map(name => {
+            const items = db.getAwardByName(name);
+            return { name, count: items.length };
+        });
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/awards/:name', (req, res) => {
+    try {
+        const data = db.getAwardByName(decodeURIComponent(req.params.name));
+        res.json(data);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/stats/:award', (req, res) => {
+    try {
+        const stats = db.getStatsByAward(decodeURIComponent(req.params.award));
+        res.json(stats);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/products/:id', (req, res) => {
+    try {
+        const product = db.getProductById(parseInt(req.params.id));
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+        res.json(product);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/search', (req, res) => {
+    try {
+        const { q } = req.query;
+        if (!q) return res.json([]);
+        const results = db.searchAwards(q);
+        res.json(results);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/stats', (req, res) => {
+    try {
+        res.json(db.getOverallStats());
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Admin routes
+app.get('/api/admin/products', requireAuth, (req, res) => {
+    try {
+        const { page = 1, limit = 20, search = '', award = '', year = '' } = req.query;
+        const filter = { search, name: award, year };
+        const all = db.getProductsByFilter(filter);
+        const start = (page - 1) * limit;
+        const items = all.slice(start, start + parseInt(limit));
+        res.json({ items, total: all.length, page: parseInt(page), totalPages: Math.ceil(all.length / limit) });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/years/:award', requireAuth, (req, res) => {
+    try {
+        const years = db.getYearsByAward(decodeURIComponent(req.params.award));
+        res.json(years.map(y => y.year));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/admin/products', requireAuth, (req, res) => {
+    try {
+        const id = db.addAward(req.body);
+        res.json({ id });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.put('/api/admin/products/:id', requireAuth, (req, res) => {
+    try {
+        db.updateAward(parseInt(req.params.id), req.body);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/admin/products/:id', requireAuth, (req, res) => {
+    try {
+        db.deleteAward(parseInt(req.params.id));
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/upload', requireAuth, upload.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        const awardName = req.body.award;
+        if (!awardName) {
+            return res.status(400).json({ error: 'Award name is required' });
+        }
+
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        let currentAward = awardName;
+        const processed = data.map(row => {
+            if (row['奖项']) currentAward = row['奖项'];
+            return { ...row, _award: currentAward };
+        });
+
+        const normalized = processed.map(r => {
+            const obj = {};
+            for (const [k, v] of Object.entries(r)) {
+                if (k === '_award') obj['奖项'] = r._award || awardName;
+                else obj[k] = v;
+            }
+            return obj;
+        });
+
+        const count = db.importAwards(awardName, normalized);
+        res.json({ success: true, imported: count });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/export/:award', requireAuth, (req, res) => {
+    try {
+        const awardName = decodeURIComponent(req.params.award);
+        const data = db.getAwardByName(awardName);
+
+        const ws = XLSX.utils.json_to_sheet(data.map(d => ({
+            '奖项': d.name,
+            '年份': d.year,
+            '获奖单位': d.region,
+            '产品名称': d.product_name,
+            '获奖等级': d.award_level,
+            '摄影类型': d.photography_type,
+            '装订方式': d.binding,
+            '出版社': d.publisher,
+            '特点亮点': d.features
+        })));
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, awardName);
+        const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        res.setHeader('Content-Disposition', 'attachment; filename="' + awardName + '.xlsx"');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buf);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/award-options', requireAuth, (req, res) => {
+    const defaultAwards = [
+        '美国印制大奖', '香港印制大奖', '中华印制大奖', '政府出版奖',
+        '上海印制大奖', '中国最美的书', '世界最美的书', '金光印艺大奖',
+        '亚洲印制大奖', '全国书籍装帧大奖', '红星奖'
+    ];
+    const existing = db.getAwardNames();
+    const all = [...new Set([...defaultAwards, ...existing])];
+    res.json(all.sort());
+});
+
+async function start() {
+    await db.initDB();
+    app.listen(config.port, () => {
+        console.log(`Server running at http://localhost:${config.port}`);
+    });
+}
+
+start();
