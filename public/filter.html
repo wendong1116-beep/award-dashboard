@@ -227,6 +227,25 @@
                             return level === filterValue;
                         });
                     }
+                } else if (filterType === 'category') {
+                    if (filterValue === '其他') {
+                        const catCounts = {};
+                        allData.forEach(d => {
+                            const cat = (d.award_category || '').trim() || '未分类';
+                            catCounts[cat] = (catCounts[cat] || 0) + 1;
+                        });
+                        const sortedCats = Object.entries(catCounts).sort((a, b) => b[1] - a[1]);
+                        const top5 = new Set(sortedCats.slice(0, 5).map(([c]) => c));
+                        filteredData = allData.filter(d => {
+                            const cat = (d.award_category || '').trim() || '未分类';
+                            return !top5.has(cat);
+                        });
+                    } else {
+                        filteredData = allData.filter(d => {
+                            const cat = (d.award_category || '').trim();
+                            return cat === filterValue;
+                        });
+                    }
                 } else {
                     filteredData = allData;
                 }
@@ -263,7 +282,7 @@
                     '<td>' + (row.product_name || '-') + '</td>' +
                     '<td>' + (level ? '<span class="badge ' + levelBadge + '">' + level + '</span>' : '-') + '</td>' +
                     '<td>' + (row.region || '-') + '</td>' +
-                    '<td>' + (row.photography_type || '-') + '</td>' +
+                    '<td>' + (filterType === 'category' ? (row.award_category || '-') : (row.photography_type || '-')) + '</td>' +
                     '<td>' + (row.binding || '-') + '</td></tr>';
             }).join('');
 

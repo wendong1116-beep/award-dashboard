@@ -305,7 +305,7 @@
                 allData = await productsResp.json();
                 const stats = await statsResp.json();
 
-                renderStats(allData);
+                renderStats(allData, stats.byCategory && stats.byCategory.length > 0);
                 initCharts(stats);
             } catch (e) {
                 console.error(e);
@@ -316,13 +316,19 @@
             window.location.href = 'filter.html?award=' + encodeURIComponent(awardName) + '&type=' + type + '&value=' + encodeURIComponent(value);
         }
 
-        function renderStats(data) {
+        function renderStats(data, useCategory) {
             const levelCounts = {};
             data.forEach(d => {
-                const level = (d.award_level || '').trim() || '未分类';
-                levelCounts[level] = (levelCounts[level] || 0) + 1;
+                if (useCategory) {
+                    const cat = (d.award_category || '').trim() || '未分类';
+                    levelCounts[cat] = (levelCounts[cat] || 0) + 1;
+                } else {
+                    const level = (d.award_level || '').trim() || '未分类';
+                    levelCounts[level] = (levelCounts[level] || 0) + 1;
+                }
             });
 
+            const filterType = useCategory ? 'category' : 'level';
             const statsRow = document.getElementById('statsRow');
             let html = '<div class="stat-card" onclick="setFilter(\'all\', \'\')"><div class="value">' + data.length + '</div><div class="label">获奖总数</div></div>';
 
@@ -331,14 +337,14 @@
             let otherCount = 0;
             sortedLevels.forEach(([level, count], idx) => {
                 if (idx < topN) {
-                    html += '<div class="stat-card" onclick="setFilter(\'level\', \'' + level + '\')"><div class="value">' + count + '</div><div class="label">' + level + '</div></div>';
+                    html += '<div class="stat-card" onclick="setFilter(\'' + filterType + '\', \'' + level + '\')"><div class="value">' + count + '</div><div class="label">' + level + '</div></div>';
                 } else {
                     otherCount += count;
                 }
             });
 
             if (otherCount > 0) {
-                html += '<div class="stat-card" onclick="setFilter(\'level\', \'其他\')"><div class="value">' + otherCount + '</div><div class="label">其他</div></div>';
+                html += '<div class="stat-card" onclick="setFilter(\'' + filterType + '\', \'其他\')"><div class="value">' + otherCount + '</div><div class="label">其他</div></div>';
             }
 
             statsRow.innerHTML = html;
@@ -402,7 +408,7 @@
             });
 
             levelChart.on('click', params => {
-                setFilter('level', params.name);
+                setFilter(useCategory ? 'category' : 'level', params.name);
             });
 
             window.addEventListener('resize', () => {
