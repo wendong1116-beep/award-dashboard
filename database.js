@@ -72,24 +72,28 @@ async function initDB() {
                 const data = JSON.parse(raw);
                 let imported = 0;
                 for (const row of (data.records || [])) {
-                    const name = row['来源'] || row['奖项'] || '';
+                    // name: award category (e.g. "美国印制大奖")
+                    const name = row['来源'] || '';
                     if (!name) continue;
-                    // Extract year from "2002年第53届美国印制大奖" → "2002"
-                    const yearMatch = String(row['奖项'] || '').match(/^(\d{4})/);
-                    const year = yearMatch ? yearMatch[1] : '';
+                    // year: from "年度" column (e.g. "2002年")
+                    const rawYear = row['年度'] || '';
+                    const year = String(rawYear).replace('年', '');
+                    // region: from "获奖单位" column
+                    const region = row['地区'] || row['获奖单位'] || row['颁奖单位'] || '';
+                    // product_name
+                    const product_name = row['获奖产品'] || row['产品名'] || row['获奖作品'] || '';
+                    // award_level: from "奖别" or "等级" column
+                    const award_level = row['奖别'] || row['等级'] || '';
+                    // award_category: from "奖项" or "奖项设置" column
+                    const award_category = row['奖项'] || row['奖项设置'] || '';
+                    const photography_type = row['摄影'] || row['类别'] || '';
+                    const binding = row['装订方式'] || '';
+                    const publisher = row['出版社'] || '';
+                    const features = row['设计、工艺、技术、装帧等 特点、亮点'] || '';
                     db.run(
-                        `INSERT INTO awards (name, year, region, product_name, award_level, photography_type, binding, publisher, features)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                        [
-                            name, year,
-                            row['获奖单位'] || row['颁奖单位'] || '',
-                            row['获奖产品'] || row['产品名'] || '',
-                            row['奖别'] || '',
-                            row['摄影'] || '',
-                            row['装订方式'] || '',
-                            row['出版社'] || '',
-                            row['设计、工艺、技术、装帧等 特点、亮点'] || ''
-                        ]
+                        `INSERT INTO awards (name, year, region, product_name, award_level, award_category, photography_type, binding, publisher, features)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [name, year, region, product_name, award_level, award_category, photography_type, binding, publisher, features]
                     );
                     imported++;
                 }
