@@ -1,6 +1,8 @@
 import initSqlJs from 'sql.js';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import config from './config.js';
 
 let db = null;
@@ -56,6 +58,46 @@ async function initDB() {
         const hash = bcrypt.hashSync(config.admin.password, 10);
         db.run("INSERT INTO users (username, password) VALUES (?, ?)", [config.admin.username, hash]);
         console.log('Admin user created');
+    }
+
+    // Auto-import from data.json if awards table is empty (Railway ephemeral filesystem)
+    const countResult = db.exec("SELECT COUNT(*) FROM awards");
+    const count = countResult[0]?.values[0]?.[0] || 0;
+    if (count === 0) {
+        console.log('Awards table empty, auto-importing from data.json...');
+        try {
+            const dataPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'data.json');
+            if (fs.existsSync(dataPath)) {
+                const raw = fs.readFileSync(dataPath, 'utf-8');
+                const data = JSON.parse(raw);
+                let imported = 0;
+                for (const row of (data.records || [])) {
+                    const name = row['来源'] || row['奖项'] || '';
+                    if (!name) continue;
+                    // Extract year from "2002年第53届美国印制大奖" → "2002"
+                    const yearMatch = String(row['奖项'] || '').match(/^(\d{4})/);
+                    const year = yearMatch ? yearMatch[1] : '';
+                    db.run(
+                        `INSERT INTO awards (name, year, region, product_name, award_level, photography_type, binding, publisher, features)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            name, year,
+                            row['获奖单位'] || row['颁奖单位'] || '',
+                            row['获奖产品'] || row['产品名'] || '',
+                            row['奖别'] || '',
+                            row['摄影'] || '',
+                            row['装订方式'] || '',
+                            row['出版社'] || '',
+                            row['设计、工艺、技术、装帧等 特点、亮点'] || ''
+                        ]
+                    );
+                    imported++;
+                }
+                console.log(`Auto-imported ${imported} records from data.json`);
+            }
+        } catch (e) {
+            console.error('Auto-import failed:', e.message);
+        }
     }
 
     saveDB();
