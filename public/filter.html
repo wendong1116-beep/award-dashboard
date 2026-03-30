@@ -155,7 +155,7 @@
                             <th>产品名称</th>
                             <th>奖别</th>
                             <th>获奖单位</th>
-                            <th>类型</th>
+                            <th id="typeHeader">类型</th>
                             <th>装订方式</th>
                         </tr>
                     </thead>
@@ -200,6 +200,14 @@
         }
 
         async function loadData() {
+            // Update 类型 column header when filtering by category
+            if (filterType === 'category') {
+                const th = document.getElementById('typeHeader');
+                if (th) th.textContent = '奖项分类';
+            } else {
+                const th = document.getElementById('typeHeader');
+                if (th) th.textContent = '类型';
+            }
             try {
                 const resp = await fetch('/api/awards/' + encodeURIComponent(awardName));
                 allData = await resp.json();
