@@ -319,37 +319,31 @@
         function renderStats(data, useCategory) {
             const levelCounts = {};
             data.forEach(d => {
-                if (useCategory) {
-                    const cat = (d.award_category || '').trim() || '未分类';
-                    levelCounts[cat] = (levelCounts[cat] || 0) + 1;
-                } else {
-                    const level = (d.award_level || '').trim() || '未分类';
-                    levelCounts[level] = (levelCounts[level] || 0) + 1;
-                }
+                const raw = useCategory ? (d.award_category || '') : (d.award_level || '');
+                const key = raw.trim() || '未分类';
+                levelCounts[key] = (levelCounts[key] || 0) + 1;
             });
 
             const filterType = useCategory ? 'category' : 'level';
             const statsRow = document.getElementById('statsRow');
-            let html = '<div class="stat-card" onclick="setFilter(\'all\', \'\')"><div class="value">' + data.length + '</div><div class="label">获奖总数</div></div>';
-
             const sortedLevels = Object.entries(levelCounts).sort((a, b) => b[1] - a[1]);
             const topN = 5;
+            const top5 = new Set(sortedLevels.slice(0, topN).map(([k]) => k));
             let otherCount = 0;
-            sortedLevels.forEach(([level, count], idx) => {
-                if (idx < topN) {
-                    html += '<div class="stat-card" onclick="setFilter(\'' + filterType + '\', \'' + level + '\')"><div class="value">' + count + '</div><div class="label">' + level + '</div></div>';
+
+            let html = '<div class="stat-card" onclick="setFilter(\'all\', \'\')"><div class="value">' + data.length + '</div><div class="label">获奖总数</div></div>';
+            sortedLevels.forEach(([key, count]) => {
+                if (top5.has(key)) {
+                    html += '<div class="stat-card" onclick="setFilter(\'' + filterType + '\', \'' + key + '\')"><div class="value">' + count + '</div><div class="label">' + key + '</div></div>';
                 } else {
                     otherCount += count;
                 }
             });
-
             if (otherCount > 0) {
                 html += '<div class="stat-card" onclick="setFilter(\'' + filterType + '\', \'其他\')"><div class="value">' + otherCount + '</div><div class="label">其他</div></div>';
             }
-
             statsRow.innerHTML = html;
         }
-
         function initCharts(stats) {
             yearChart = echarts.init(document.getElementById('yearChart'));
             regionChart = echarts.init(document.getElementById('regionChart'));

@@ -200,6 +200,7 @@
         }
 
         async function loadData() {
+            filterValue = filterValue.trim();
             // Update 类型 column header when filtering by category
             if (filterType === 'category') {
                 const th = document.getElementById('typeHeader');
