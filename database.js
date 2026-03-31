@@ -191,7 +191,7 @@ export const addAward = (data) => {
     const images = Array.isArray(data.images) ? serializeImages(data.images) : (data.image_url || '');
     const result = run(
         'INSERT INTO awards (name, year, region, product_name, award_level, award_category, photography_type, binding, publisher, features, image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [data.name || '', data.year || '', data.region || '', data.product_name || '', data.award_level || '', data.award_category || '', data.photography_type || '', data.binding || '', data.publisher || '', data.features || '', images]
+        [(data.name||'').trim(), (data.year||'').trim(), (data.region||'').trim(), (data.product_name||'').trim(), (data.award_level||'').trim(), (data.award_category||'').trim(), (data.photography_type||'').trim(), (data.binding||'').trim(), (data.publisher||'').trim(), (data.features||'').trim(), images]
     );
     return result.lastInsertRowid;
 };
@@ -199,7 +199,7 @@ export const addAward = (data) => {
 export const updateAward = (id, data) => {
     const images = Array.isArray(data.images) ? serializeImages(data.images) : (data.image_url || '');
     run('UPDATE awards SET name=?, year=?, region=?, product_name=?, award_level=?, award_category=?, photography_type=?, binding=?, publisher=?, features=?, image_url=? WHERE id=?',
-        [data.name, data.year, data.region, data.product_name, data.award_level, data.award_category || '', data.photography_type || '', data.binding || '', data.publisher || '', data.features || '', images, id]);
+        [(data.name||'').trim(), (data.year||'').trim(), (data.region||'').trim(), (data.product_name||'').trim(), (data.award_level||'').trim(), (data.award_category||'').trim(), (data.photography_type||'').trim(), (data.binding||'').trim(), (data.publisher||'').trim(), (data.features||'').trim(), images, id]);
 };
 
 export const deleteAward = (id) => {
@@ -215,8 +215,8 @@ export const importAwards = (name, records) => {
                 r['年份'] || r['奖项'] || '',
                 r['获奖单位'] || r['颁奖单位'] || '',
                 r['获奖产品'] || r['产品名'] || r['获奖项目'] || '',
-                r['奖别'] || r['奖项明细'] || '',
-                r['奖项'] || '',
+                (r['奖别'] || r['奖项明细'] || '').trim(),
+                (r['奖项'] || '').trim(),
                 r['摄影'] || r['类别'] || r['类别.1'] || '',
                 r['装订方式'] || '',
                 r['出版社'] || '',

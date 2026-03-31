@@ -211,15 +211,15 @@ async function importData() {
 
             const record = {
                 name: mapping.name,
-                year: row[mapping.year] || '',
-                region: row[mapping.region] || '',
-                product_name: productName,
-                award_level: awardLevel,
-                award_category: row[mapping.award_category] || '',
-                photography_type: row[mapping.photography_type] || '',
-                binding: row[mapping.binding] || '',
-                publisher: row[mapping.publisher] || '',
-                features: row[mapping.features] || ''
+                year: (row[mapping.year] || '').trim(),
+                region: (row[mapping.region] || '').trim(),
+                product_name: productName.trim(),
+                award_level: awardLevel.trim(),
+                award_category: (row[mapping.award_category] || '').trim(),
+                photography_type: (row[mapping.photography_type] || '').trim(),
+                binding: (row[mapping.binding] || '').trim(),
+                publisher: (row[mapping.publisher] || '').trim(),
+                features: (row[mapping.features] || '').trim()
             };
 
             db.run(`
