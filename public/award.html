@@ -375,13 +375,22 @@
                 }]
             });
 
-            // 等级分布 - 优先使用奖项数据，否则使用等级数据
-            const useCategory = stats.byCategory && stats.byCategory.length > 0;
-            const rawData = useCategory
-                ? stats.byCategory.map(s => ({ name: (s.award_category || '').trim() || '未分类', value: s.count }))
-                : stats.byLevel.map(s => ({ name: (s.award_level || '').trim() || '未分类', value: s.count }));
-            const chartData = rawData.sort((a, b) => b.value - a.value).slice(0, 100);
-            document.getElementById('levelChartTitle').textContent = useCategory ? '奖项分布' : '等级分布';
+            // 奖项分布 - 始终用 award_category（奖项分类），只作为辅助参考
+            const chartData = (stats.byCategory || [])
+                .filter(s => s.award_category && s.award_category.trim())
+                .map(s => ({ name: s.award_category.trim(), value: s.count }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 20);
+            const chartTitle = chartData.length > 0 ? '奖项分布' : '等级分布';
+            document.getElementById('levelChartTitle').textContent = chartTitle;
+            // Fallback to award_level if no award_category
+            if (chartData.length === 0) {
+                chartData.push(...(stats.byLevel || [])
+                    .filter(s => s.award_level && s.award_level.trim())
+                    .map(s => ({ name: s.award_level.trim(), value: s.count }))
+                    .sort((a, b) => b.value - a.value)
+                    .slice(0, 20));
+            }
 
             levelChart.setOption({
                 tooltip: { trigger: 'item', backgroundColor: 'rgba(18,18,26,0.95)', borderColor: 'rgba(201,162,39,0.3)', textStyle: { color: '#fff' } },
@@ -404,7 +413,7 @@
             });
 
             levelChart.on('click', params => {
-                setFilter(useCategory ? 'category' : 'level', params.name);
+                setFilter('category', params.name);
             });
 
             window.addEventListener('resize', () => {

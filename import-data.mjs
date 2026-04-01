@@ -103,8 +103,9 @@ async function importData() {
             award_level: '等级',
             photography_type: '',
             binding: '',
-            publisher: '',
-            features: ''
+            publisher: '颁奖单位',
+            features: '',
+            award_category: '奖项'
         },
         '上海印制大奖': {
             name: '上海印制大奖',
