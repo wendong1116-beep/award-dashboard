@@ -296,4 +296,3 @@ export const getAwardsWithStats = () => {
 
 export { initDB, saveDB };
 export default { getAllAwards, getAwardByName, getProductById, getStatsByAward, getAwardNames, addAward, updateAward, deleteAward, importAwards, searchAwards, getOverallStats, getAwardsWithStats, getYearsByAward, getProductsByFilter, initDB, saveDB };
-export { getAwardsWithStats };
