@@ -51,12 +51,7 @@ app.get('/api/auth/check', (req, res) => {
 // Awards routes
 app.get('/api/awards', (req, res) => {
     try {
-        const awards = db.getAwardNames();
-        const result = awards.map(name => {
-            const items = db.getAwardByName(name);
-            return { name, count: items.length };
-        });
-        res.json(result);
+        res.json(db.getAwardsWithStats());
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

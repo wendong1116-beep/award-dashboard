@@ -8,6 +8,19 @@ import config from './config.js';
 let db = null;
 const DB_PATH = './database.sqlite';
 
+
+// In-memory cache for expensive queries
+const cache = new Map();
+const CACHE_TTL = 60 * 1000; // 60 seconds
+
+function getCached(key, computeFn) {
+    const entry = cache.get(key);
+    if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.val;
+    const val = computeFn();
+    cache.set(key, { val, ts: Date.now() });
+    return val;
+}
+
 async function initDB() {
     const SQL = await initSqlJs();
 
@@ -259,11 +272,28 @@ export const getProductsByFilter = (filter = {}) => {
 };
 
 export const getOverallStats = () => {
+    const cached = cache.get('overallStats');
+    if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.val;
     const total = queryOne('SELECT COUNT(*) as count FROM awards')?.count || 0;
     const awards = queryAll('SELECT DISTINCT name FROM awards').map(r => r.name);
     const regionCount = queryOne("SELECT COUNT(DISTINCT region) as count FROM awards WHERE region IS NOT NULL AND region != ''")?.count || 0;
-    return { total, awardCount: awards.length, awards, regionCount };
+    const result = { total, awardCount: awards.length, awards, regionCount };
+    cache.set('overallStats', { val: result, ts: Date.now() });
+    return result;
+};
+
+// Optimized: single query instead of N+1
+export const getAwardsWithStats = () => {
+    const cached = cache.get('awardsWithStats');
+    if (cached && Date.now() - cached.ts < CACHE_TTL) return cached.val;
+    const rows = queryAll(
+        'SELECT name, COUNT(*) as count FROM awards GROUP BY name ORDER BY count DESC'
+    );
+    const result = rows.map(r => ({ name: r.name, count: r.count }));
+    cache.set('awardsWithStats', { val: result, ts: Date.now() });
+    return result;
 };
 
 export { initDB, saveDB };
-export default { getAllAwards, getAwardByName, getProductById, getStatsByAward, getAwardNames, addAward, updateAward, deleteAward, importAwards, searchAwards, getOverallStats, getYearsByAward, getProductsByFilter, initDB, saveDB };
+export default { getAllAwards, getAwardByName, getProductById, getStatsByAward, getAwardNames, addAward, updateAward, deleteAward, importAwards, searchAwards, getOverallStats, getAwardsWithStats, getYearsByAward, getProductsByFilter, initDB, saveDB };
+export { getAwardsWithStats };
