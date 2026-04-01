@@ -305,7 +305,8 @@
                 allData = await productsResp.json();
                 const stats = await statsResp.json();
 
-                renderStats(allData, stats.byCategory && stats.byCategory.length > 0);
+                // 始终用 award_level（等级）显示统计卡，只在等级为空时才用奖项分类
+                renderStats(allData, !stats.byLevel || stats.byLevel.length === 0);
                 initCharts(stats);
             } catch (e) {
                 console.error(e);
