@@ -327,7 +327,7 @@
             const filterType = useCategory ? 'category' : 'level';
             const statsRow = document.getElementById('statsRow');
             const sortedLevels = Object.entries(levelCounts).sort((a, b) => b[1] - a[1]);
-            const topN = 10;
+            const topN = 100;  // show all
             const top5 = new Set(sortedLevels.slice(0, topN).map(([k]) => k));
             let otherCount = 0;
 
@@ -379,7 +379,7 @@
             const rawData = useCategory
                 ? stats.byCategory.map(s => ({ name: (s.award_category || '').trim() || '未分类', value: s.count }))
                 : stats.byLevel.map(s => ({ name: (s.award_level || '').trim() || '未分类', value: s.count }));
-            const chartData = rawData.sort((a, b) => b.value - a.value).slice(0, 10);
+            const chartData = rawData.sort((a, b) => b.value - a.value).slice(0, 100);
             document.getElementById('levelChartTitle').textContent = useCategory ? '奖项分布' : '等级分布';
 
             levelChart.setOption({
