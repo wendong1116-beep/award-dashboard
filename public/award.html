@@ -381,10 +381,11 @@
                 .map(s => ({ name: s.award_category.trim(), value: s.count }))
                 .sort((a, b) => b.value - a.value)
                 .slice(0, 20);
-            const chartTitle = chartData.length > 0 ? '奖项分布' : '等级分布';
+            const usingCategoryData = chartData.length > 0;
+            const chartTitle = usingCategoryData ? '奖项分布' : '等级分布';
             document.getElementById('levelChartTitle').textContent = chartTitle;
             // Fallback to award_level if no award_category
-            if (chartData.length === 0) {
+            if (!usingCategoryData) {
                 chartData.push(...(stats.byLevel || [])
                     .filter(s => s.award_level && s.award_level.trim())
                     .map(s => ({ name: s.award_level.trim(), value: s.count }))
@@ -413,7 +414,7 @@
             });
 
             levelChart.on('click', params => {
-                setFilter('category', params.name);
+                setFilter(usingCategoryData ? 'category' : 'level', params.name);
             });
 
             window.addEventListener('resize', () => {

@@ -13,6 +13,10 @@ const DB_PATH = './database.sqlite';
 const cache = new Map();
 const CACHE_TTL = 60 * 1000; // 60 seconds
 
+function invalidateCache() {
+    cache.clear();
+}
+
 function getCached(key, computeFn) {
     const entry = cache.get(key);
     if (entry && Date.now() - entry.ts < CACHE_TTL) return entry.val;
@@ -148,6 +152,7 @@ function queryOne(sql, params = []) {
 function run(sql, params = []) {
     db.run(sql, params);
     const lid = db.exec("SELECT last_insert_rowid()")[0]?.values[0]?.[0];
+    invalidateCache();
     saveDB();
     return { lastInsertRowid: lid };
 }

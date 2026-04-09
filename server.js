@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as db from './database.js';
@@ -23,6 +24,11 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage });
+
+function buildDownloadFilename(name) {
+    const utf8Name = encodeURIComponent(name + '.xlsx');
+    return `attachment; filename="export.xlsx"; filename*=UTF-8''${utf8Name}`;
+}
 
 // Auth routes
 app.post('/api/auth/login', async (req, res) => {
@@ -167,7 +173,8 @@ app.post('/api/upload', requireAuth, upload.single('file'), (req, res) => {
             return res.status(400).json({ error: 'Award name is required' });
         }
 
-        const workbook = XLSX.readFile(req.file.path);
+        const buffer = fs.readFileSync(req.file.path);
+        const workbook = XLSX.read(buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -214,7 +221,7 @@ app.get('/api/export/:award', requireAuth, (req, res) => {
         XLSX.utils.book_append_sheet(wb, ws, awardName);
         const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 
-        res.setHeader('Content-Disposition', 'attachment; filename="' + awardName + '.xlsx"');
+        res.setHeader('Content-Disposition', buildDownloadFilename(awardName));
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.send(buf);
     } catch (e) {
